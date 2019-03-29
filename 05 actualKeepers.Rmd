@@ -1,0 +1,259 @@
+---
+title: "Actual Keepers"
+output: html_notebook
+---
+
+# Adjust Guesses
+
+```{r message=FALSE, warning=FALSE}
+source(here::here("Guess Keepers.R"))
+actualKeepers <- keeperGuess
+```
+
+## Tam
+
+```{r}
+actualKeepers %>% filter(manager=="Tam" & Keeper==T)
+```
+
+Expired: Scherzer = F, Trout = F 
+Add: Villar = T, Doolittle = T, 
+
+```{r}
+actualKeepers[which(actualKeepers$Name %in% c("Max Scherzer", "Mike Trout", "Chris Sale")),"Keeper"] <- F
+actualKeepers[which(actualKeepers$Name %in% c("Jonathan Villar", "Sean Doolittle")),"Keeper"] <- T
+```
+
+## Cody
+
+```{r}
+actualKeepers %>% filter(manager=="Cody" & Keeper==T)
+```
+
+Cespedes = F (true up Cost at the end - lots of drops and trades across the league)
+Foltynewicz -> Nate
+Muncy -> Cody
+LeClerc, Paddack -> T
+
+```{r}
+actualKeepers[which(actualKeepers$Name %in% c("Yoenis Cespedes")),"Keeper"] <- F
+actualKeepers[which(actualKeepers$Name %in% c("Chris Paddack", "Jose Leclerc")),"Keeper"] <- T
+actualKeepers[which(actualKeepers$Name %in% c("Mike Foltynewicz")),"manager"] <- "Nate"
+actualKeepers[which(actualKeepers$Name %in% c("Max Muncy")),"manager"] <- "Cody"
+```
+
+
+## Nate
+
+```{r}
+actualKeepers %>% filter(manager=="Nate" & Keeper==T)
+```
+
+Salvador Perez, Robinson Cano, Carlos Santana -> T
+Mike Moustakas -> F
+
+```{r}
+actualKeepers[which(actualKeepers$Name %in% c("Mike Moustakas")),"Keeper"] <- F
+actualKeepers[which(actualKeepers$Name %in% c("Salvador Perez", "Robinson Cano", "Carlos Santana")),"Keeper"] <- T
+```
+
+## Tony
+
+```{r}
+actualKeepers %>% filter(manager=="Tony" & Keeper==T)
+```
+
+
+Craig Kimbrel, James Paxton = F
+"Mark Melancon", "Bo Bichette", "Ken Giles" = T
+
+```{r}
+actualKeepers[which(actualKeepers$Name %in% c("Craig Kimbrel", "James Paxton")),"Keeper"] <- F
+actualKeepers[which(actualKeepers$Name %in% c("Mark Melancon", "Bo Bichette", "Ken Giles")),"Keeper"] <- T
+```
+
+## JJ
+
+```{r}
+actualKeepers %>% filter(manager=="JJ" & Keeper==T)
+```
+
+"Matt Chapman", "Dee Gordon", "Keston Hiura", "Jesus Luzardo" -> T  
+"Miles Mikolas", "Robbie Ray" -> F
+
+"Scooter Gennett" -> Rob
+Luzardo & Hiura are not even in keeperGuess
+
+```{r}
+actualKeepers[which(actualKeepers$Name %in% c("Miles Mikolas", "Robbie Ray")),"Keeper"] <- F
+actualKeepers[which(actualKeepers$Name %in% c("Matt Chapman", "Dee Gordon", "Keston Hiura", "Jesus Luzardo")),"Keeper"] <- T
+```
+
+```{r message=FALSE, warning=FALSE}
+actualKeepers <- rbind(actualKeepers, guessKeepers("JJ", c("Keston Hiura", "Jesus Luzardo"), 2))
+```
+
+## Diego
+```{r}
+actualKeepers %>% filter(manager=="Diego" & Keeper==T)
+```
+
+
+"Jean Segura" "Nick Castellanos" -> Diego
+"Forrest Whitley"  -> T  Whitley not in keepers, but won;t make majors so whatever
+"Marcus Semien", "Joshua James" -> F
+
+```{r}
+actualKeepers[which(actualKeepers$Name %in% c("Marcus Semien", "Joshua James")),"Keeper"] <- F
+actualKeepers[which(actualKeepers$Name %in% c("Jean Segura", "Nick Castellanos")),"manager"] <- "Diego"
+```
+
+```{r message=FALSE, warning=FALSE}
+actualKeepers <- rbind(actualKeepers, guessKeepers("Diego", c("Forrest Whitley"), 1))
+```
+
+## Brian
+
+```{r}
+actualKeepers %>% filter(manager=="Brian" & Keeper==T)
+```
+
+"Rafael Devers", -> T
+Add :  "Austin Meadows", "Willy Adames", "Taylor Trammell"  
+"Jose Quintana" -> F (expired)
+"Joey Lucchesi" -> F
+
+```{r}
+actualKeepers[which(actualKeepers$Name %in% c("Joey Lucchesi", "Jose Quintana")),"Keeper"] <- F
+actualKeepers[which(actualKeepers$Name %in% c("Rafael Devers")),"Keeper"] <- T
+```
+
+```{r message=FALSE, warning=FALSE}
+actualKeepers <- rbind(actualKeepers, guessKeepers("Brian", 
+                                                   c("Austin Meadows", "Willy Adames", "Taylor Trammell" ), 3))
+```
+
+## Rob
+
+```{r}
+actualKeepers %>% filter(manager=="Rob" & Keeper==T)
+```
+
+F <- "Rich Hill", "Josh Donaldson", "Masahiro Tanaka", "Rick Porcello"
+Add <- "Royce Lewis", "Shane Bieber", "Charlie Morton", "Shohei Ohtani" (Batter)
+T <- "Adam Ottavino"
+
+```{r}
+actualKeepers[which(actualKeepers$Name %in% c("Rich Hill", "Josh Donaldson", "Masahiro Tanaka", "Rick Porcello")),"Keeper"] <- F
+actualKeepers[which(actualKeepers$Name %in% c("Adam Ottavino")),"Keeper"] <- T
+```
+
+```{r message=FALSE, warning=FALSE}
+actualKeepers <- rbind(actualKeepers, guessKeepers("Rob", 
+                                                   c("Royce Lewis", "Shane Bieber", "Charlie Morton"), 3))
+```
+
+## Mike
+
+```{r}
+actualKeepers %>% filter(manager=="Mike" & Keeper==T)
+```
+
+"Miguel Andujar", "Jose Alvarado"  -> T
+"Alex Kiriloff", "Joshua James" -> Add
+
+```{r}
+actualKeepers[which(actualKeepers$Name %in% c("Miguel Andujar", "Jose Alvarado")),"Keeper"] <- T
+```
+
+```{r message=FALSE, warning=FALSE}
+actualKeepers <- rbind(actualKeepers, guessKeepers("Mike", 
+                                                   c("Alex Kiriloff", "Joshua James"), 2))
+```
+
+
+## David
+
+```{r}
+actualKeepers %>% filter(manager=="David" & Keeper==T)
+```
+
+F <- "Yu Darvish", "Wil Myers"
+T <- "Nick Senzel", "Giancarlo Stanton"
+David <- "Yoan Moncada"
+
+```{r}
+actualKeepers[which(actualKeepers$Name %in% c("Nick Senzel", "Giancarlo Stanton")),"Keeper"] <- T
+actualKeepers[which(actualKeepers$Name %in% c("Yu Darvish", "Wil Myers")),"Keeper"] <- F
+actualKeepers[which(actualKeepers$Name %in% c("Yoan Moncada")),"manager"] <- "David"
+```
+
+
+## John
+
+```{r}
+actualKeepers %>% filter(manager=="John" & Keeper==T)
+```
+
+Add <- "Peter Alonso", "Brendan Rodgers"
+F <- "Rougned Odor", "Jose Martinez", "Harrison Bader"
+
+```{r}
+
+actualKeepers[which(actualKeepers$Name %in% c("Rougned Odor", "Jose Martinez", "Harrison Bader")),"Keeper"] <- F
+
+```
+
+```{r}
+actualKeepers <- rbind(actualKeepers, guessKeepers("John", 
+                                                   c("Peter Alonso", "Brendan Rodgers"), 2))
+```
+
+
+## Matt
+
+```{r}
+actualKeepers %>% filter(manager=="Matt" & Keeper==T)
+```
+
+F <-  "J.A. Happ", "Andrew Miller", "Luke Voit"
+"Matt" <- "Brian Dozier"
+Add <- "Kyle Schwarber", "Gregory Polanco", "Francisco Mejia", "Jo Adell"
+T <- "Sean Newcomb"
+
+
+actualKeepers[which(actualKeepers$Name %in% c("Rougned Odor", "Jose Martinez", "Harrison Bader")),"Keeper"] <- F
+
+```{r}
+
+actualKeepers[which(actualKeepers$Name %in% c("J.A. Happ", "Andrew Miller", "Luke Voit")),"Keeper"] <- F
+
+actualKeepers[which(actualKeepers$Name %in% c("Sean Newcomb")),"Keeper"] <- T
+actualKeepers[which(actualKeepers$Name %in% c("Brian Dozier")),"manager"] <- "Matt"
+
+```
+
+```{r}
+actualKeepers <- rbind(actualKeepers, guessKeepers("Matt", 
+                                                   c("Kyle Schwarber", "Gregory Polanco", "Francisco Mejia", "Jo Adell"), 4))
+```
+
+# Budget
+Lot's of dollars going around - here's the actual draft budget
+
+```{r}
+(budget = data.frame(stringsAsFactors = F,
+                    actualKeepers %>% select(manager) %>% distinct,
+                    budget=c(123,47,102,167,94,27,125,73,216,146,137,143))
+)
+```
+
+
+
+# What's Left? 
+
+
+```{r}
+actualKeepers %>% filter(Keeper==F) %>% arrange(desc(Value))
+```
+

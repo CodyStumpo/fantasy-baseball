@@ -1,0 +1,188 @@
+---
+title: "TamDraft 2019"
+output: html_notebook
+---
+
+
+`source(here::here("05 actualKeepers.Rmd"))`
+You can't actually do this with notebooks - but go run it.
+
+
+
+```{r}
+actualKeepers %>% filter(Keeper==F) %>% arrange(desc(Value))
+```
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+actualKeepers %>% inner_join(compositeH) %>% filter(Keeper==F) %>% arrange(desc(Value))
+```
+
+122
+
+Moustakas - 15
+Olson / Abreu / Cruz /Encarnacion / Myers- 15
+Hicks / McCutchen / Peralta - 15
+Profar / Rosario / Peraza - 10
+
+122-55 = 67
+
+```{r message=FALSE, warning=FALSE}
+actualKeepers %>% inner_join(compositeP) %>% filter(Keeper==F) %>% arrange(desc(Value))
+```
+
+
+67 - 100... too much by 33
+
+Paxton / Kershaw - 30
+Hill / Ray / Archer / Tanaka / Price / Darvish - 15
+Ryu / Maeda / Mikolas / Happ / Gray- 10
+
+
+Osuna / Kimbrel  - 30
+Miller / Allen / Steckenrider / Givens/ May- 10
+James / Pressly - 5
+
+
+```{r}
+SS1 <- c("Jose Peraza", "Jurickson Profar", "Marcus Semien")#, "Jorge Polanco", "Amed Rosario","Andrelton Simmons", "Elvis Andrus")
+# Garret Hampson, Kike Hernandez, Ketel Marte, Paul DeJong - Camargo /Wendle
+SP1 <- c("Clayton Kershaw", "David Price", "Stephen Strasburg")#, "James Paxton") #"Chris Archer"
+UT1 <- c( "Mike Moustakas", "Josh Donaldson") # "Edwin Encarnacion","Nelson Cruz", "Matt Olson", "Justin Upton","Miguel Cabrera", "Jose Abreu", )
+#UT2 <- c("Chris Taylor", "Marwin Gonzalez")
+OF1 <- c("Aaron Hicks",  "Starling Marte", "Wil Myers","Andrew McCutchen")#,"Shin-Soo Choo", "Brandon Nimmo", "Adam Eaton", )
+SP2 <- c("Rich Hill", "Robbie Ray", "Masahiro Tanaka", "Yu Darvish")#, "Collin McHugh", "Joshua James" )
+SP3 <- c("Kenta Maeda","Hyun-Jin Ryu", "Nick Pivetta")
+RP1 <-c("Diego Castillo", "Ryan Pressly", "Keone Kela", "Pedro Strop", "A.J. Minter")#, Boston Closer...
+CL1 <- c("Roberto Osuna", "David Robertson") #, "Andrew Miller", "Cody Allen", "Trevor May", "Drew Steckenrider"
+```
+
+```{r}
+score <-c()
+draft <-c()
+cost <- c()
+for (SS in SS1) for (SP in SP1) for (UT in UT1) 
+  #for (UTb in UT2) 
+    for (OF in OF1) for (SPb in SP2) for (SPc in SP3) for(RP in RP1) for (CL in CL1){
+  h <-c(SS,UT,OF) #UTb)
+  p <- c(SP, SPb, SPc,RP, CL)
+  score <- c(score,scoreACodyDraft(h,p))
+  draft <- c(draft,paste(SS,UT, OF,SP,SPb, SPc,RP, CL,sep = ",")) #UTb,
+  cost <- c(cost,fgAuctionCalc %>% filter (Name %in% c(h,p) ) %>% pull(Adjusted) %>% ceiling %>% pmax(1) %>% sum)
+}
+draftAdvice <- data.frame(stringsAsFactors = F, draft, score, cost) %>% filter(cost <122) %>% arrange(desc(score)) 
+
+```
+```{r}
+draftAdvice
+```
+
+
+
+
+Profar, Cruz, Hicks, Price, Ray, Maeda, Osuna, Pressly
+Semien, Cruz, Hicks, Strasburg, Tanaka, Maeda, Osuna, Pressly
+Peraza ,Encarnacion, Marte, Kershaw, Maeda, Osuna, Kela
+
+```{r}
+priceCompare %>% filter(Name %in% unlist(strsplit(draftAdvice[1,"draft"],",")))
+
+
+```
+```{r}
+require(broom)
+draftAdvice %>% 
+  separate(draft, c("SS","UT",  "OF","SP","SPb", "SPc", "RP", "CL" ), ",") %>% #UTb ,SPc
+  mutate_if(is.character, as.factor) %>% 
+  lm(score ~ SS + UT  + OF + SP + SPb  + RP + CL, .) %>% # + UTb + SPc
+  tidy %>% select(term, estimate) %>%
+  arrange(desc(estimate))
+
+
+```
+
+Profar - 10
+Cruz - 26
+Osuna - 28
+Hicks - 15
+Price - 22 or Ray / Hill - 15 or Kershaw 25
+Kela / Pressly / Strop - 8
+Maeda - 10
+Moose / Donaldson - 20
+Peraza - 10
+
+
+sleepers
+Franmil, Hampson, Domingo Santana, Winker, Buxton, Urias, Glasnow, 
+
+
+Good springs
+McMahon, Kike, Barreto, Alonso, Bird, Robles, Abreu, Semien, Franmil, Laureano, Hampson, Peraza, C Santana, D Santana
+Stroman, J Gray, T Richards, Flaherty, Montas, Strasburg, Tanaka
+Maeda, Hill, Ryu, Urias
+
+Brinson, Alford, Buxton, Kepler, Rosario, Eaton, Michael Taylor
+
+Still 60s
+Kyle Tucker
+
+# FINAL SET
+```{r}
+SS <-  c("Jose Peraza", "Jurickson Profar", "Marcus Semien", "Jorge Polanco", "Amed Rosario","Andrelton Simmons", "Elvis Andrus", "Paul DeJong")
+
+SS2B <- c("Garret Hampson", "Jurickson Profar", "Chris Taylor", "Kike Hernandez", "Ketel Marte", "Marwin Gonzalez", "Joey Wendle", "Niko Goodrum")
+
+OF <- c("Andrew McCutchen", "Aaron Hicks", "Starling Marte", "Wil Myers", "Franmil Reyes", "Jesse Winker", "Ramon Laureano", "Brandon Nimmo", "Adam Eaton")
+
+busts <- c("Jackie Bradley", "Lewis Brinson", "Rafael Devers", "Byron Buxton", "Domingo Santana")
+
+CL <- c("Roberto Osuna", "David Robertson", "Cody Allen", "Andrew Miller", "Mychal Givens", "Archie Bradley", "Craig Kimbrel", "Drew Steckenrider")
+
+CLlite <- c("Trevor May", "Matt Barnes", "Brandon Morrow", "Blake Parker", "A.J. Minter")
+
+RP <- c("Dellin Betances", "Chad Green", "Brad Peacock", "Keone Kela", "Diego Castillo", "Ryan Pressly", "Reyes Moronta")
+
+LASP <- c("Clayton Kershaw", "Kenta Maeda", "Hyun-Jin Ryu", "Julio Urias", "Rich Hill")
+
+SP <- c("David Price", "Stephen Strasburg", "Masahiro Tanaka", "Tyler Skaggs", "Charlie Morton", "James Paxton", "Robbie Ray", "Yu Darvish", "Carlos Martinez", "Nathan Eovaldi", "Joey Lucchesi", "Jon Gray", "Sonny Gray")
+
+```
+
+
+```{r}
+repname <- function(vec) rep(deparse(substitute(vec)), length(vec))
+draftHitters <- data.frame(stringsAsFactors = F,
+                           Name = c(SS, SS2B, OF, busts), 
+                           Role = c(repname(SS), repname(SS2B), repname(OF), repname(busts)))
+x<-priceAList(draftHitters$Name)
+draftHitters <- cbind(draftHitters,  x[2], x[3])
+draftHitters %<>% 
+  left_join(fgAuctionCalc) %>%
+  left_join(compositeH, by="Name") %>% 
+  select(-c(SB, SBRate, POS.x, POS.y)) %>% 
+  mutate(NSB=round(NSB), pricez=round(pricez,1))
+
+#CL, CLlite, RP, LASP, SP
+```
+
+```{r}
+draftPitchers <- data.frame(stringsAsFactors = F,
+                           Name = c(CL, CLlite, RP, LASP, SP), 
+                           Role = c(repname(CL), repname(CLlite), repname(RP), repname(LASP), repname(SP)))
+x<-priceAList(draftPitchers$Name)
+draftPitchers <- cbind(draftPitchers,  x[2], x[3])
+draftPitchers %<>% 
+  left_join(fgAuctionCalc) %>%
+  left_join(compositeP, by="Name") %>%
+  select(-c(POS.x, POS.y, K, ERSaved, WHSaved, KSurplus, GS))  %>%
+  mutate(QS=round(QS), pricez=round(pricez,1), K9 = round(K9,1))
+
+```
+
+```{r}
+draftHitters
+draftPitchers
+```
+

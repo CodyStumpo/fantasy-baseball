@@ -1,0 +1,674 @@
+---
+title: "Tam Dynasty PreDraft 2019"
+output: html_notebook
+---
+
+First, make sure you run GetProjections, Rank, Guess Keepers.
+```{r message=FALSE}
+source(here::here("03 Guess Keepers.R")) 
+```
+
+
+# As of Feb 11
+
+
+```{r}
+# Who is in best position heading to the draft, assumingthey can spend their money
+# Value + 260-Cost = Value after draft
+# I guess this is just profit + 260
+(keeperGuess %>% 
+  filter(Keeper==T) %>% 
+  replace_na(list(Cost= 5, Value=0, Rank=300)) %>% 
+  mutate(profit = Value-Cost) %>%
+  group_by(manager) %>% 
+  summarise(Cost = sum(Cost), 
+            Value = round(sum(Value)), 
+            profit = sum(profit)%>%round, 
+            MedianRank=median(Rank)%>% round) %>%
+   mutate(VAD = round(Value + 260 - Cost)) %>% 
+  arrange(desc(VAD)) -> preDraft)
+```
+```{r}
+#who is in best position heading into the draft, assuming there's nothing in the draft.
+(preDraft %>%
+  arrange(desc(Value))
+)
+```
+
+```{r message=FALSE}
+#Using the keepers as the whole team, what are the standings?
+
+
+keeperGuess %>% 
+  left_join(compositeH) %>% 
+  group_by(manager) %>% 
+  filter(Keeper==T) %>%
+  summarise(R=sum(R, na.rm=T), 
+            HR=sum(HR, na.rm=T), 
+            RBI=sum(RBI, na.rm=T), 
+            NSB=sum(NSB, na.rm=T),
+            OBP=mean(OBP, na.rm=T),
+            SLG = mean(SLG, na.rm=T)) -> HstatsPreDraft
+
+keeperGuess %>% 
+  left_join(compositeP) %>%
+  filter(Keeper==T) %>%
+  group_by(manager) %>% 
+  summarise(IP=sum(IP, na.rm=T), 
+            QS=sum(QS, na.rm=T), 
+            SV=sum(SV, na.rm=T),
+            ERA =  ratioAverages["ERA"] - sum(ERSaved, na.rm=T)/sum(IP/9, na.rm=T),
+            WHIP = ratioAverages["WHIP"] - sum(WHSaved, na.rm=T)/sum(IP, na.rm=T),
+            K9 = ratioAverages["K9"] + sum(KSurplus, na.rm=T)/sum(IP/9, na.rm=T)) -> PstatsPreDraft
+
+HstatsPreDraft %>% left_join(PstatsPreDraft) -> standingsPreDraft
+
+scoresPreDraft<- cbind(manager=standingsPreDraft$manager, 
+                       standingsPreDraft %>% select(R, HR, RBI, OBP, SLG, NSB, IP, SV, K9, QS) %>% mutate_all(funs(rank)),
+                       standingsPreDraft %>% select(ERA, WHIP) %>% mutate_all(funs(rank(desc(.))))
+)
+
+ scoresPreDraft$total <- scoresPreDraft %>% select (-manager) %>% rowSums
+
+knitr::kable(scoresPreDraft %>% arrange(desc(total)) )
+```
+
+```{r}
+
+# Who's in the draft?
+keeperGuess %>% filter(Keeper==F) %>% arrange(desc(Value)) 
+```
+And on waivers: 
+Andrus, Piscotty, Miguel Cabrera, Braun, Eaton, Dickerson, Herrera, Bauers, Adam Jones, Josh Bell,
+David Robertson, Eivaldi, Maeda, Kikuchi, Jon Gray, Alex Wood, Zack Godley, Archie Bradley, Pedro Strop
+
+```{r message=FALSE}
+keeperGuess %>% 
+  left_join(compositeH) %>% 
+  filter(Keeper==T & manager=="Cody" & !is.na(POS)) %>% 
+  mutate(NSB=round(NSB)) %>%
+  select(Name, POS, Rank, R, HR, RBI, NSB, OBP, SLG)
+
+```
+```{r message=FALSE}
+keeperGuess %>% 
+  left_join(compositeP) %>% 
+  filter(Keeper==T & manager=="Cody" & !is.na(POS)) %>%
+  mutate(QS = round(QS), K9 = round(K9,1)) %>%
+  select(Name, POS, Rank, IP, QS, ERA, WHIP, K9, SV)
+```
+
+```{r message=FALSE}
+# What SB might be in the draft
+
+keeperGuess %>% 
+  left_join(compositeH) %>% 
+  filter(Keeper==F & !is.na(POS)) %>% 
+  mutate(NSB=round(NSB), Value=round(Value)) %>%
+  select(Name, POS, Rank, Value, R, HR, RBI, NSB, OBP, SLG) %>% 
+  arrange(desc(NSB))
+```
+```{r message=FALSE}
+
+#What SV might be in the draft
+keeperGuess %>% 
+  left_join(compositeP) %>% 
+  filter(Keeper==F & !is.na(POS) & SV > 0) %>%
+  mutate(QS = round(QS), K9 = round(K9,1), Value=round(Value)) %>%
+  select(Name, POS, Rank, Value, IP, QS, ERA, WHIP, K9, SV) %>% 
+  arrange(desc(SV))
+```
+And
+
+* Archie Bradley - 23
+* David Robertson - 16
+* Pedro Strip - 9
+* Rosenthal?
+* Matt Barnes
+* Brandon Morrow
+* Keone Kela
+* A.J. Minter
+* Trevor May
+* Blake Parker
+* Swarzak
+* Strickland
+* Buttrey
+* Nate Jones
+* Ryan Brasier 
+
+# Trade Eval
+
+Muncy for Folty
+```{r}
+keeperGuessAlt <- keeperGuess
+keeperGuessAlt[which(keeperGuessAlt$Name =="Max Muncy"),"manager"] <- "Cody"
+keeperGuessAlt[which(keeperGuessAlt$Name =="Mike Foltynewicz"),"manager"] <- "Nate"
+
+```
+```{r message=FALSE}
+keeperGuessAlt %>% 
+  left_join(compositeH) %>% 
+  group_by(manager) %>% 
+  filter(Keeper==T) %>%
+  summarise(R=sum(R, na.rm=T), 
+            HR=sum(HR, na.rm=T), 
+            RBI=sum(RBI, na.rm=T), 
+            NSB=sum(NSB, na.rm=T),
+            OBP=mean(OBP, na.rm=T),
+            SLG = mean(SLG, na.rm=T)) -> HstatsPreDraftAlt
+
+keeperGuessAlt %>% 
+  left_join(compositeP) %>%
+  filter(Keeper==T) %>%
+  group_by(manager) %>% 
+  summarise(IP=sum(IP, na.rm=T), 
+            QS=sum(QS, na.rm=T), 
+            SV=sum(SV, na.rm=T),
+            ERA =  ratioAverages["ERA"] - sum(ERSaved, na.rm=T)/sum(IP/9, na.rm=T),
+            WHIP = ratioAverages["WHIP"] - sum(WHSaved, na.rm=T)/sum(IP, na.rm=T),
+            K9 = ratioAverages["K9"] + sum(KSurplus, na.rm=T)/sum(IP/9, na.rm=T)) -> PstatsPreDraftAlt
+
+HstatsPreDraftAlt %>% left_join(PstatsPreDraftAlt) -> standingsPreDraftAlt
+
+scoresPreDraftAlt<- cbind(manager=standingsPreDraftAlt$manager, 
+                       standingsPreDraftAlt %>% select(R, HR, RBI, OBP, SLG, NSB, IP, SV, K9, QS) %>% mutate_all(funs(rank)),
+                       standingsPreDraftAlt %>% select(ERA, WHIP) %>% mutate_all(funs(rank(desc(.))))
+)
+
+ scoresPreDraftAlt$total <- scoresPreDraftAlt %>% select (-manager) %>% rowSums
+
+knitr::kable(scoresPreDraftAlt %>% arrange(desc(total)) )
+```
+Moves me from 5th place 82 to 3rd place 95.5.  
+AND moves Nate from 60 to 62
+
+# And Story for package
+
+```{r}
+keeperGuessAlt2 <- keeperGuessAlt
+keeperGuessAlt2[which(keeperGuessAlt2$Name =="Trevor Story"),"manager"] <- "Cody"
+keeperGuessAlt2[which(keeperGuessAlt2$Name %in% c("Walker Buehler", "Jose Aguilar", "Aaron Hicks")),"manager"] <- "John"
+
+keeperGuessAlt2[which(keeperGuessAlt2$Name %in% c("Jose Aguilar", "Aaron Hicks")),"Keeper"] <- "True"
+keeperGuessAlt2[which(keeperGuessAlt2$Name %in% c("Harrison Bader", "Jose Martinez", "Seranthony Dominguez")),"Keeper"] <- "False"
+
+
+```
+```{r message=FALSE}
+keeperGuessAlt2 %>% 
+  left_join(compositeH) %>% 
+  group_by(manager) %>% 
+  filter(Keeper==T) %>%
+  summarise(R=sum(R, na.rm=T), 
+            HR=sum(HR, na.rm=T), 
+            RBI=sum(RBI, na.rm=T), 
+            NSB=sum(NSB, na.rm=T),
+            OBP=mean(OBP, na.rm=T),
+            SLG = mean(SLG, na.rm=T)) -> HstatsPreDraftAlt2
+
+keeperGuessAlt2 %>% 
+  left_join(compositeP) %>%
+  filter(Keeper==T) %>%
+  group_by(manager) %>% 
+  summarise(IP=sum(IP, na.rm=T), 
+            QS=sum(QS, na.rm=T), 
+            SV=sum(SV, na.rm=T),
+            ERA =  ratioAverages["ERA"] - sum(ERSaved, na.rm=T)/sum(IP/9, na.rm=T),
+            WHIP = ratioAverages["WHIP"] - sum(WHSaved, na.rm=T)/sum(IP, na.rm=T),
+            K9 = ratioAverages["K9"] + sum(KSurplus, na.rm=T)/sum(IP/9, na.rm=T)) -> PstatsPreDraftAlt2
+
+HstatsPreDraftAlt2 %>% left_join(PstatsPreDraftAlt2) -> standingsPreDraftAlt2
+
+scoresPreDraftAlt2<- cbind(manager=standingsPreDraftAlt2$manager, 
+                       standingsPreDraftAlt2 %>% select(R, HR, RBI, OBP, SLG, NSB, IP, SV, K9, QS) %>% mutate_all(funs(rank)),
+                       standingsPreDraftAlt2 %>% select(ERA, WHIP) %>% mutate_all(funs(rank(desc(.))))
+)
+
+ scoresPreDraftAlt2$total <- scoresPreDraftAlt2 %>% select (-manager) %>% rowSums
+
+knitr::kable(scoresPreDraftAlt2 %>% arrange(desc(total)) )
+```
+hard to make it work for John as far as this year, even giving him very good players.  Has to be about long-term.
+
+
+# Get ready for draft day
+```{r}
+offTheBoard <- keeperGuess %>% filter(Keeper==T) %>% pull(Name)
+offTheBoard %<>% append(c('Mike Trout', 'Carlos Santana', 'Chris Sale'))
+
+
+overallCz %>% filter(! Name %in% offTheBoard) %>% select(Name) %>% priceAList
+```
+
+
+# Who to draft next
+
+```{r message=FALSE}
+pool <- c(compositeH$Name, compositeP$Name)
+gone <-  keeperGuess %>% filter(Keeper==T) %>% pull(Name)
+
+candidates <- pool[!pool %in% gone]
+len <- length(candidates)
+results <- data.frame(stringsAsFactors = F, 
+                      Name=rep("",len), score=0, rank=0, Value=0)
+for (i in 1:len){
+
+keeperGuessMarginal <- keeperGuess  
+keeperGuessMarginal[which(keeperGuessMarginal$Name ==candidates[i]),c("manager","Keeper")] <- c("Cody",T)
+
+
+keeperGuessMarginal %>% 
+  left_join(compositeH) %>% 
+  group_by(manager) %>% 
+  filter(Keeper==T) %>%
+  summarise(R=sum(R, na.rm=T), 
+            HR=sum(HR, na.rm=T), 
+            RBI=sum(RBI, na.rm=T), 
+            NSB=sum(NSB, na.rm=T),
+            OBP=mean(OBP, na.rm=T),
+            SLG = mean(SLG, na.rm=T)) -> HstatsPreDraftMarginal
+
+keeperGuessMarginal %>% 
+  left_join(compositeP) %>%
+  filter(Keeper==T) %>%
+  group_by(manager) %>% 
+  summarise(IP=sum(IP, na.rm=T), 
+            QS=sum(QS, na.rm=T), 
+            SV=sum(SV, na.rm=T),
+            ERA =  ratioAverages["ERA"] - sum(ERSaved, na.rm=T)/sum(IP/9, na.rm=T),
+            WHIP = ratioAverages["WHIP"] - sum(WHSaved, na.rm=T)/sum(IP, na.rm=T),
+            K9 = ratioAverages["K9"] + sum(KSurplus, na.rm=T)/sum(IP/9, na.rm=T)) -> PstatsPreDraftMarginal
+
+HstatsPreDraftMarginal %>% left_join(PstatsPreDraftMarginal) -> standingsPreDraftMarginal
+
+scoresPreDraftMarginal<- cbind(manager=standingsPreDraftMarginal$manager, 
+                       standingsPreDraftMarginal %>% select(R, HR, RBI, OBP, SLG, NSB, IP, SV, K9, QS) %>% mutate_all(funs(rank)),
+                       standingsPreDraftMarginal %>% select(ERA, WHIP) %>% mutate_all(funs(rank(desc(.))))
+)
+
+ scoresPreDraftMarginal$total <- scoresPreDraftMarginal %>% select (-manager) %>% rowSums
+
+outcome <- scoresPreDraftMarginal %>% arrange(desc(total)) %>% mutate(rank=row_number(desc(total))) %>% filter(manager=="Cody") %>% select(total, rank)
+#keeperGuessMarginal[which(keeperGuessMarginal$Name ==candidates[i]),c("manager", "Keeper")] <- c("",F)
+
+#results[i,] <- cbind
+x <- list(candidates[i], outcome, ceiling(priceAList(candidates[i])$pricez))
+results[i,] <- unlist(x)
+}
+```
+```{r}
+results %>% arrange(desc(as.numeric(score)))
+```
+
+```{r message=FALSE}
+#What's going on at a position
+overallCz %>% 
+  left_join(compositeH) %>% 
+  mutate(ranking=row_number(desc(total)),
+         total=round(total,1), NSB=round(NSB)) %>% 
+  filter(POS=="SS") %>% 
+  select(Name, ranking, R, HR, RBI, OBP, SLG, NSB)
+
+```
+# SS in the draft
+```{r message=FALSE}
+#SS in the draft
+
+keeperGuess %>% 
+  full_join(overallCz) %>% 
+  replace_na(list(Keeper=F)) %>% 
+  right_join(compositeH) %>%
+  filter(Keeper==F) %>%
+  filter(POS=="SS") %>%
+  mutate(NSB = round(NSB), Rank = priceAList(Name)$rankz, Price=round(priceAList(Name)$pricez,1)) %>%
+  select (Name, Rank, Price ,R, HR, RBI, OBP, SLG, NSB) %>%
+  arrange(desc(Price)) 
+```
+
+OK, Segura & Peraza are the 2 best available.  Semienm Polanco, Simmons, Andrus all next tier.  Avoid Rosario, Anderson, Gourriel.
+Rosario actually may be worth a flyer for upside.
+
+
+# SP in the draft
+```{r message=FALSE}
+
+keeperGuess %>% 
+  full_join(overallCz) %>% 
+  replace_na(list(Keeper=F)) %>% 
+  right_join(compositeP) %>%
+  filter(Keeper==F) %>%
+  filter(POS=="SP") %>%
+  mutate(Value = round(Value,1),  QS = round(QS), K9 = round(K9,1),Rank = priceAList(Name)$rankz, Price=round(priceAList(Name)$pricez,1)) %>%
+  select (Name, Rank, Price, IP, QS, ERA, WHIP, K9) %>% 
+  arrange(desc(Price)) 
+```
+
+
+Here, we have some guys!  
+
+* Target ERod, Ryu, Price?, Maeda, Archer?, Kershaw?, Skaggs, Godley, 
+* Spend on Sale, Scherzer? 
+* Flyers on Sonny Gray, Strasburg, Morton. McHugh, Jon Gray, Eovaldi
+
+
+# RP in the draft
+```{r message=FALSE}
+
+keeperGuess %>% 
+  full_join(overallCz) %>% 
+  replace_na(list(Keeper=F)) %>% 
+  right_join(compositeP) %>%
+  filter(Keeper==F) %>%
+  filter(POS=="RP") %>%
+  mutate(Value = round(Value,1),  K9 = round(K9,1),Rank = priceAList(Name)$rankz, Price=round(priceAList(Name)$pricez,1)) %>%
+  select (Name, Rank, Price, IP, SV, ERA, WHIP, K9) %>% 
+  arrange(desc(Price)) 
+```
+
+Spend here
+
+# Hitters in the draft
+
+```{r message=FALSE}
+DT::datatable(
+  keeperGuess %>% 
+  full_join(overallCz) %>% 
+  replace_na(list(Keeper=F)) %>% 
+  right_join(compositeH) %>%
+  filter(Keeper==F) %>%
+    #filter(POS=="SS") %>%
+  mutate(NSB = round(NSB), Rank = priceAList(Name)$rankz, Price=round(priceAList(Name)$pricez,1)) %>%
+  select (Name, POS, Rank, Price ,R, HR, RBI, OBP, SLG, NSB) %>%
+  arrange(desc(Price)) 
+)
+```
+
+```{r message=FALSE}
+#C in the draft
+
+keeperGuess %>% 
+  full_join(overallCz) %>% 
+  replace_na(list(Keeper=F)) %>% 
+  right_join(compositeH) %>%
+  filter(Keeper==F) %>%
+  filter(POS=="C") %>%
+  mutate(NSB = round(NSB), Rank = priceAList(Name)$rankz, Price=round(priceAList(Name)$pricez,1)) %>%
+  select (Name, Rank, Price ,R, HR, RBI, OBP, SLG, NSB) %>%
+  arrange(desc(Price)) 
+```
+# Rank possible teams
+
+
+
+```{r}
+ranker <- function(standingsColumn, newVal) ntile(c(standingsColumn, newVal),12) %>% tail(1)
+
+#give yourself 11 hitters
+keptH <- c('Aaron Judge', 'Anthony Rendon', 'Yasmani Grandal', 'A.J. Pollock', 'Yasiel Puig', 'Max Muncy', 'Jesus Aguilar')
+keptP <- c('Walker Buehler', 'Corey Kluber', 'Noah Syndergaard', 'Raisel Iglesias', 'Jose Leclerc', "Chris Paddack")
+
+
+scoreACodyDraft <- function (hitters,pitchers){
+  
+team2H <- c(keptH, hitters)
+
+team2Hstats <- compositeH %>% filter(Name %in% team2H) %>% 
+  summarise(R=sum(R), HR=sum(HR), RBI=sum(RBI), NSB=sum(NSB), OBP=mean(OBP), SLG=mean(SLG))
+
+
+team2HRanks <- c(
+ranker(standings$R, team2Hstats$R),
+ranker(standings$HR, team2Hstats$HR),
+ranker(standings$RBI, team2Hstats$RBI),
+ranker(standings$NSB, team2Hstats$NSB),
+ranker(standings$OBP, team2Hstats$OBP),
+ranker(standings$SLG, team2Hstats$SLG)
+)
+
+
+team2P <- c(keptP, pitchers)
+team2Pstats <- compositeP %>% filter(Name %in% team2P) %>%
+  mutate(ER = ERA * IP/9, WH = WHIP * IP, K=K9 * IP/9) %>%
+  summarise(IP=sum(IP), QS=sum(QS), SV=sum(SV), ERA=sum(ER)/(sum(IP)/9), WHIP=sum(WH)/sum(IP), K9 = sum(K)/(sum(IP)/9))
+
+
+team2PRanks <- c(
+ranker(standings$IP, team2Pstats$IP),
+ranker(standings$QS, team2Pstats$QS),
+ranker(standings$SV, team2Pstats$SV),
+13-ranker(standings$ERA, team2Pstats$ERA),
+13-ranker(standings$WHIP, team2Pstats$WHIP),
+ranker(standings$K9, team2Pstats$K9)
+)
+sum(team2PRanks) + sum(team2HRanks)
+}
+
+```
+What's the best I can do with Sale?
+```{r}
+H1 <- c('Brandon Nimmo', 'Jose Peraza', 'Marwin Gonzalez', 'Justin Smoak')
+P1 <- c('Steven Matz', 'Hyun-Jin Ryu', 'Tyler Skaggs', 'Chris Sale', 'Reyes Moronta', 'Brandon Morrow', 'Keone Kela', 'Ken Giles')
+scoreACodyDraft(H1, P1)
+126 - priceAList(c(H1,P1))$pricez %>% ceiling %>% pmax(1) %>% sum
+```
+What's the best I can do with Trout?
+```{r}
+H2 <- c('Mike Trout', 'Jose Peraza', 'Marwin Gonzalez', 'Miguel Cabrera')
+P2 <- c('Sonny Gray', 'Trevor Richards', 'Tyler Skaggs', 'Seth Lugo', 'Reyes Moronta', 'Lou Trivino', 'Brad Peacock','Luke Weaver')
+scoreACodyDraft(H2, P2)
+126 - priceAList(c(H2,P2))$pricez %>% ceiling %>% pmax(1) %>% sum
+```
+
+What about splitting it up a bit?
+```{r}
+H3 <- c('Carlos Santana', 'Jean Segura', 'Nelson Cruz', 'Aaron Hicks')
+P3 <- c('Charlie Morton', 'Collin McHugh', 'Tyler Skaggs', 'David Price', 'Reyes Moronta', 'Keone Kela', 'Brad Peacock','Jose Alvarado')
+scoreACodyDraft(H3, P3)
+126 - priceAList(c(H3,P3))$pricez %>% ceiling %>% pmax(1) %>% sum
+```
+
+```{r message=FALSE}
+compositeP %>% filter (Name %in% c(keptP, P3)) %>% left_join(priceAList(c(keptP, P3))) %>%
+  mutate(QS=round(QS), K9=round(K9,1), pricez=ceiling(pricez)) %>% select(Name, Value = pricez, IP, ERA, WHIP, SV, QS, K9) %>%
+  arrange (desc(Value))
+```
+
+```{r message=FALSE}
+compositeH %>% filter (Name %in% c(keptH, H3)) %>% 
+  left_join(priceAList(c(keptH, H3))) %>%
+  select(Name, Value = pricez, R, HR, RBI, OBP, SLG, NSB) %>% mutate(NSB=round(NSB), Value=ceiling(Value)) %>%
+  arrange (desc(Value))
+```
+```{r}
+fgAuctionCalc %>% filter(Name %in% c(H3,P3))
+```
+```{r}
+fgAuctionCalc %>% filter(Name %in% c(H3,P3)) %>% pull(Adjusted) %>% pmax(1) %>% ceiling %>% sum
+```
+Pretty cool actually that this basket of players is priced about the same, between me & FG.
+
+
+```{r}
+priceCompare <- overallCz %>% left_join(fgAuctionCalc) %>% mutate(price = price2019(row_number(desc(total)))) %>% select (Name, Adjusted, price)
+```
+```{r}
+library(ggrepel)
+ggplot(priceCompare) +
+  aes( x=pmax(Adjusted,1), y=pmax(price,1)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  geom_text_repel(data = . %>% mutate(label=ifelse(Adjusted > 40, Name, "")), 
+                  aes(label=label)
+                  ) +
+  xlim(c(0,115)) + 
+  ylim(c(0,115)) +
+  xlab("FG Price") +
+  ylab("my price")
+
+```
+```{r}
+#Sleepers
+priceCompare %>% filter(Adjusted > -5 & price > -5 & 
+                          !(Name %in% (keeperGuess %>% filter(Keeper == T) %>% pull(Name))) ) %>%  
+  mutate(diff = price - Adjusted) %>% arrange(desc(diff)) %>% filter (diff>0)
+```
+
+```{r}
+#Overrated
+priceCompare %>% filter(Adjusted > -5 & price > -5 & 
+                          !(Name %in% (keeperGuess %>% filter(Keeper == T) %>% pull(Name))) ) %>%  
+  mutate(diff = price - Adjusted) %>% arrange(diff) %>% filter(diff <0)
+```
+
+Put together a draft imagining my value but FG price, arbitrage!
+```{r}
+H4 <- c('Brandon Nimmo', 'Jean Segura', 'Chris Taylor', 'Edwin Encarnacion')
+P4 <- c('Charlie Morton', 'Hyun-Jin Ryu', 'Clayton Kershaw', 'Kenta Maeda', 'Roberto Osuna', 'Eduardo Rodriguez', 'Brad Peacock','Jose Alvarado')
+scoreACodyDraft(H4, P4)
+126 - fgAuctionCalc %>% filter (Name %in% c(H4,P4) ) %>% pull(Adjusted) %>% ceiling %>% pmax(1) %>% sum
+```
+
+```{r}
+priceCompare %>% filter(Name %in% c(H4,P4))
+```
+
+Big picture we need to spend 60 on 4 SP, 35 on 3 hitters, 10 on a SS, 25 on RP with ratios that might nab saves
+SP 30: Kershaw, Strasburg, Morton, Price
+SP 20: Archer
+SP 10: McHugh, Josh James if he's there
+SP 5: Maeda, Pivetta, Ryu, ERod, Bieber, 
+
+or what if 2 SP 30 and 2 5s or prospects
+
+SS 10: Segura, Polanco, Peraza, Rosario, Simmons, Semien, Andrus
+RP: [RP in the draft] Closer with a real job 25 - Osuna, Robertson,...
+
+oneOF 5-15: OF Nimmo, Myers, Hicks,  Meadows, Eaton, Winker, Choo, Marte, JBJ - 25HR, 5 SB, .340 / .440 75/75
+one good hitter 15-20: Encarnacion, Cruz, Santana, Cabrera, Abreu, McCutchen, Chapman, Olson,
+one more hitter: Chris Taylor, Marwin, Cesar, DJ?, 
+ex-prospect: Devers, Moncada, Buxton, Profar, Brinson
+
+Prospects: get some guys for <$5  Kieboom, Hiura, Gavin Lux, Keibert RUiz, Laureano, Winker, Bader, Jansen, Paddack, Alonso
+
+Prospects
+* Senzel - average now, developing to plus OBP 
+* Alonso - 80 raw power - just...get this guy
+* honeywell - back from TJ mid-season
+* Hampson - obp/sb 2b
+* paddack - keep as +1? 
+* DJ Peters - Dodgers big power OF
+
+Not prospects
+* Danny Jansen - C with ML average bat now.
+* Josh James - high K starter for astros
+* kyle tucker - power speed of
+
+target  
+* eovaldi
+* trevor may
+* pressly
+
+Could do a legit optimization now. Pick a SS, 3 other hitters, 4 SP, 4 RP, keep budget under 126 and max score.
+```{r}
+scoreACodyDraft("","")
+```
+Baseline score, if I draft nobody
+```{r}
+#limited options
+
+SS1 <- c("Jean Segura", "Jose Peraza", "Jorge Polanco", "Amed Rosario", "Marcus Semien")#, "Andrelton Simmons", "Elvis Andrus")
+SP1 <- c("Clayton Kershaw")#, "David Price", "Charlie Morton", "Stephen Strasburg", "Chris Archer")
+UT1 <- c("Edwin Encarnacion","Nelson Cruz", "Matt Olson")#, "Carlos Santana", "Miguel Cabrera", "Jose Abreu", "Andrew McCutchen", "Matt Chapman")
+UT2 <- c("Chris Taylor", "Marwin Gonzalez")
+OF1 <- c("Aaron Hicks",  "Shin-Soo Choo", "Starling Marte")#,"Brandon Nimmo", "Adam Eaton",)
+SP2 <- c("Collin McHugh")#, "Joshua James")
+SP3 <- c("Kenta Maeda", "Shane Bieber")#,"Hyun-Jin Ryu", "Eduardo Rodriguez", "Nick Pivetta")
+RP1 <-c("Jose Alvarado", "Diego Castillo", "Adam Ottavino", "Ryan Pressly", "Keone Kela")
+CL1 <- c("Roberto Osuna")
+score <-c()
+draft <-c()
+cost <- c()
+for (SS in SS1) for (SP in SP1) for (UT in UT1) for (UTb in UT2) for (OF in OF1) for (SPb in SP2) for (SPc in SP3) for(RP in RP1) for (CL in CL1){
+  h <-c(SS,UT,UTb,OF)
+  p <- c(SP, SPb, SPc,RP, CL)
+  score <- c(score,scoreACodyDraft(h,p))
+  draft <- c(draft,paste(SS,UT, UTb, OF,SP,SPb, SPc,RP, CL,sep = ","))
+  cost <- c(cost,fgAuctionCalc %>% filter (Name %in% c(h,p) ) %>% pull(Adjusted) %>% ceiling %>% pmax(1) %>% sum)
+}
+draftAdvice <- data.frame(stringsAsFactors = F, draft, score, cost) %>% filter(cost <127) %>% arrange(desc(score)) 
+
+```
+```{r}
+draftAdvice
+```
+
+```{r}
+priceCompare %>% filter(Name %in% unlist(strsplit(draftAdvice[1,"draft"],",")))
+
+
+```
+```{r message=FALSE, warning=FALSE}
+require(broom)
+draftAdvice %>% 
+  separate(draft, c("SS","UT", "UTb", "OF","SP","SPb", "SPc","RP", "CL" ), ",") %>% 
+  mutate_if(is.character, as.factor) %>% 
+  lm(score ~ SS + UT + UTb + OF  + SPc + RP , .) %>% 
+  tidy %>% select(term, estimate) %>%
+  arrange(desc(estimate))
+
+
+```
+
+How to interpret this?  I have \$126 - \$31 for Kershaw and \$22 for Osuna "for sure" = \$73 left for seven other players to move me from...
+```{r}
+scoreACodyDraft("", c("Clayton Kershaw", "Roberto Osuna"))
+```
+```{r}
+summary(draftAdvice$score)
+```
+
+70 to somewhere in the 94-104 range.  So the "average" value of each of my \$73 is about 0.4 standings points.  So for Segura coming in at 2.3 - I should be willing to spend actually 2.3/.4 = \$5 or \$6 more than \$73/7 - so could go to \$16 for him!
+
+
+
+```{r}
+scoreADraft <- function (mng, hitters,pitchers){
+  
+  keptH <- keeperGuess %>% filter(manager==mng & Keeper==T) %>% inner_join(compositeH) %>% pull(Name)
+  keptP <- keeperGuess %>% filter(manager==mng & Keeper==T) %>% inner_join(compositeP) %>% pull(Name)
+ 
+   team2H <- c(keptH, hitters)
+  
+  team2Hstats <- compositeH %>% filter(Name %in% team2H) %>% 
+    summarise(R=sum(R), HR=sum(HR), RBI=sum(RBI), NSB=sum(NSB), OBP=mean(OBP), SLG=mean(SLG))
+  
+  
+  team2HRanks <- c(
+    ranker(standings$R, team2Hstats$R),
+    ranker(standings$HR, team2Hstats$HR),
+    ranker(standings$RBI, team2Hstats$RBI),
+    ranker(standings$NSB, team2Hstats$NSB),
+    ranker(standings$OBP, team2Hstats$OBP),
+    ranker(standings$SLG, team2Hstats$SLG)
+  )
+  
+  
+  team2P <- c(keptP, pitchers)
+  team2Pstats <- compositeP %>% filter(Name %in% team2P) %>%
+    mutate(ER = ERA * IP/9, WH = WHIP * IP, K=K9 * IP/9) %>%
+    summarise(IP=sum(IP), QS=sum(QS), SV=sum(SV), ERA=sum(ER)/(sum(IP)/9), WHIP=sum(WH)/sum(IP), K9 = sum(K)/(sum(IP)/9))
+  
+  
+  team2PRanks <- c(
+    ranker(standings$IP, team2Pstats$IP),
+    ranker(standings$QS, team2Pstats$QS),
+    ranker(standings$SV, team2Pstats$SV),
+    13-ranker(standings$ERA, team2Pstats$ERA),
+    13-ranker(standings$WHIP, team2Pstats$WHIP),
+    ranker(standings$K9, team2Pstats$K9)
+  )
+  sum(team2PRanks) + sum(team2HRanks)
+}
+
+```
+
