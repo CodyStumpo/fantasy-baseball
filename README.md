@@ -1,27 +1,11 @@
 # fantasy-baseball
-Scrape projections, rank players in league scoring, keeper draft advice, trade evaluation, standings projection,...
+This repo sets out to optimize a fantasy baseball draft. It considers how best to spend a budget given roster constraints, league scoring rules, estimates of player performance, and "keeper" players. This uses a (very) complex objective function with uncertain inputs, and searches over a relatively large space of possibilities quickly.
 
-for 12 team keeper league with 12 keepers each, 6x6 saber roto.
-```
-                Name value
-1         Mike Trout    88
-2         Chris Sale    77
-3       Max Scherzer    70
-4       Jacob deGrom    66
-5   Justin Verlander    62
-6      J.D. Martinez    59
-7       Corey Kluber    56
-8       Mookie Betts    54
-9        Gerrit Cole    52
-10 Giancarlo Stanton    51
-11       Blake Snell    49
-12   Carlos Carrasco    48
-13        Aaron Nola    46
-14      Bryce Harper    45
-15      Jose Ramirez    44
-16     Nolan Arenado    43
-17      Gary Sanchez    42
-18      Trevor Story    41
-19         Juan Soto    40
-20       Aaron Judge    39
-```
+Some of the components are: 
+
+* Scrape projections
+* estimate inputs (machine learning!)
+* rank players in league scoring
+* keeper draft advice
+* trade evaluation
+* standings projection
